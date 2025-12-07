@@ -20,7 +20,6 @@ class ChromePWDecrypter:
         self.db_path = db_path
         self.og_encryption_key = self.fetch_og_encryption_key()
         self.new_encryption_key = self.fetch_new_encrytion_key()
-
     def decrypt_with_cng(self,input_data):
         ncrypt = ctypes.windll.NCRYPT
         hProvider = gdef.NCRYPT_PROV_HANDLE()
@@ -186,7 +185,6 @@ class ChromePWDecrypter:
             return "Balls"
     def decrypt_default(self,password):
         return str(win32crypt.CryptUnprotectData(password, None, None, None, 0)[0])
-    
     def decrypt_old(self,password):
             # v10/v11 uses AES-256-GCM
             # First 3 bytes are version (v10/), next 12 bytes are IV
