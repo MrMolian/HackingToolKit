@@ -1,0 +1,8 @@
+requests
+pywin32
+pycryptodome
+windows-curses
+pywin32-ctypes
+cryptography
+PythonForWindows
+PySide6
