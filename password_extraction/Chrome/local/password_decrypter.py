@@ -16,8 +16,9 @@ import windows.generated_def as gdef
 from Crypto.Cipher import AES, ChaCha20_Poly1305
 
 class ChromePWDecrypter:
-    def __init__(self, db_path):
+    def __init__(self, db_path,local_state):
         self.db_path = db_path
+        self.local_state = local_state
         self.og_encryption_key = self.fetch_og_encryption_key()
         self.new_encryption_key = self.fetch_new_encrytion_key()
     def decrypt_with_cng(self,input_data):
@@ -139,10 +140,8 @@ class ChromePWDecrypter:
     
 
     def fetch_new_encrytion_key(self):
-        user_profile = os.environ['USERPROFILE']
-        local_state_path = rf"{user_profile}\AppData\Local\Google\Chrome\User Data\Local State"
         # Read Local State
-        with open(local_state_path, "r", encoding="utf-8") as f:
+        with open(self.local_state, "r", encoding="utf-8") as f:
             local_state = json.load(f)
         app_bound_encrypted_key = local_state["os_crypt"]["app_bound_encrypted_key"]
         assert(binascii.a2b_base64(app_bound_encrypted_key)[:4] == b"APPB")
@@ -162,8 +161,7 @@ class ChromePWDecrypter:
         """
         Gets the chrome encryption key.
         """
-        local_computer_directory_path = os.path.join(os.environ["USERPROFILE"], "AppData", "Local", "Google", "Chrome", "User Data", "Local State")
-        with open(local_computer_directory_path, "r", encoding="utf-8") as f:
+        with open(self.local_state, "r", encoding="utf-8") as f:
             local_state_data = f.read()
             local_state_data = json.loads(local_state_data)
         # decoding the encryption key using base64
